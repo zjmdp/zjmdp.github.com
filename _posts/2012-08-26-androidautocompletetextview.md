@@ -100,6 +100,7 @@ public class SuggestionDBManage {
 {% endhighlight %}
 
 为了实现历史记录的自动提示功能，我们需要借助Android提供的`AutoCompleteTextView`控件，该控件使用了`Adapter`方式来绑定用来提示的数据，用过类似ListView控件的话应该对这种方式不会陌生，然而对于`AutoCompleteTextView`来说，绑定的Adapter必须是实现了`Filterable`接口的`Adapter`，关键字的过滤功能是通过`Filter`这个类来实现的，而`AutoCompleteTextView`会调用`Filterable`接口的`getFilter()`函数，得到具体的`Filter`实例后执行过滤，具体的过滤规则是通过继承`Filter`这个类，并且重载`Filter`类的`performFiltering`函数来定制的。
+
 数据库的访问通过`AsnycTask`来完成，这是考虑到数据库的`query`操作有可能是一个比较耗时的操作，因此不适合放到主线程中，通过`AsycTaskv`可以避免界面失去响应的问题，从数据库取得数据后通过`notifyDataSetChanged()`来更新界面，具体代码如下：
 
 {% highlight java %}
