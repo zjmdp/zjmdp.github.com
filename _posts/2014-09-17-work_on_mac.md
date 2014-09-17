@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "如何在mac下工作"
+title: "拥抱Mac之码农篇"
 description: ""
 category: 
 tags: []
