@@ -7,6 +7,8 @@ tags: []
 ---
 {% include JB/setup %}
 
+今天第一时间升级了Yosemite，大致遇到了几个问题，简单总结一下。
+
 ##Homebrew
 
 ###问题
