@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Android中mesure过程详解 (结合Android 4.0.4源码)"
+title: "Android中mesure过程详解"
 description: ""
 category: 
 tags: []

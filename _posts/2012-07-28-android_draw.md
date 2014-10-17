@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Android中draw过程分析 (结合Android 4.0.4源码)"
+title: "Android中draw过程分析"
 description: ""
 category: 
 tags: []
