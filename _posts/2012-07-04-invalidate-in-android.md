@@ -9,11 +9,11 @@ tags: []
 
 ```invalidate()```函数的主要作用是请求View树进行重绘，该函数可以由应用程序调用，或者由系统函数间接调用，例如```setEnable()```, ```setSelected()```, ```setVisiblity()```都会间接调用到```invalidate()```来请求View树重绘，更新View树的显示。
 
-注：requestLayout()和requestFocus()函数也会引起视图重绘
+注：```requestLayout()```和```requestFocus()```函数也会引起视图重绘
 
 下面我们通过源码来了解invalidate()函数的工作原理，首先我们来看View类中invalidate()的实现过程：
 
-```
+{% highlight java %}
 /**
  * Invalidate the whole view. If the view is visible,
  * {@link #onDraw(android.graphics.Canvas)} will be called at some point in
@@ -23,11 +23,11 @@ tags: []
 public void invalidate() {
     invalidate(true); 
 }
-```
+{% endhighlight %}
 
 ```invalidate()```函数会转而调用```invalidate(true)```，继续往下看：
 
-```
+{% highlight java %}
 /**
  * This is where the invalidate() work actually happens. A full invalidate()
  * causes the drawing cache to be invalidated, but this function can be called with
@@ -78,8 +78,8 @@ void invalidate(boolean invalidateCache) {
         }
     }
 }
+{% endhighlight %}
 
-```
 
 下面我们来具体进行分析```invalidate(true)```函数的执行流程：
 
@@ -91,7 +91,8 @@ void invalidate(boolean invalidateCache) {
 
 接下来看```invalidateChild()```的 实现过程：
 
-```
+
+{% highlight java %}
 public final void invalidateChild(View child, final Rect dirty) {
     if (ViewDebug.TRACE_HIERARCHY) {
         ViewDebug.trace(this, ViewDebug.HierarchyTraceType.INVALIDATE_CHILD);
@@ -230,7 +231,7 @@ public final void invalidateChild(View child, final Rect dirty) {
         }
     }
 }
-```
+{% endhighlight %}
 
 
 大概流程如下，我们主要关注dirty区域不是null（非硬件加速）的情况：
@@ -243,7 +244,8 @@ public final void invalidateChild(View child, final Rect dirty) {
 
 以上过程的主体是一个```do{}while{}```循环，不断的将子视图的dirty区域与父视图做运算来确定最终要重绘的dirty区域，最终循环到```ViewRoot```（```ViewRoot```的```parent```为```null```）为止，并将dirty区域保存到```ViewRoot```的```mDirty```变量中
 
-```
+
+{% highlight java %}
 /**
  * Don't call or override this method. It is used for the implementation of
  * the view hierarchy.
@@ -303,22 +305,23 @@ public ViewParent invalidateChildInParent(final int[] location, final Rect dirty
 
     return null;
 }
-```
+{% endhighlight %}
 
 该函数首先调用```offset```将子视图的坐标位置转换为在父视图（当前视图）的显示位置，这里主要考虑scroll后导致子视图在父视图中的显示区域会发生变化，接着调用```union```函数求得当前视图与子视图的交集,求得的交集必定是小于```dirty```的范围，因为子视图的```dirty```区域有可能超出其父视图（当前视图）的范围，最后返回当前视图的父视图。
 
 再来看```ViewRoot```中```invalidateChildInparent```的执行过程：
 
-```
+{% highlight java %}
 public ViewParent invalidateChildInParent(final int[] location, final Rect dirty) {
         invalidateChild(null, dirty);
         return null;
-    }
-```
+}
+{% endhighlight %}
 
 该函数仅仅调用了```ViewRoot```的```invalidateChild```，下面继续看```invalidateChild```的源码：
 
-```
+
+{% highlight java %}
 public void invalidateChild(View child, Rect dirty) {
     checkThread();
     if (DEBUG_DRAW) Log.v(TAG, "Invalidate child: " + dirty);
@@ -349,7 +352,7 @@ public void invalidateChild(View child, Rect dirty) {
         scheduleTraversals();
     }
 }
-```
+{% endhighlight %}
 
 具体分析如下：
 

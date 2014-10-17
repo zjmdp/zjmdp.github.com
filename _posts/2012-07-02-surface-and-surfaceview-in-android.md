@@ -12,7 +12,7 @@ tags: []
 ###什么是SurfaceView？
 说SurfaceView是一个View也许不够严谨，然而从定义中```public class SurfaceView extends View {...}```显示SurfaceView确实是派生自View，但是SurfaceView却有着自己的Surface，继续看SurfaceView的源码：
 
-```
+{% highlight java %}
 if (mWindow == null) {
       mWindow = new MyWindow(this);
       mLayout.type = mWindowType;
@@ -20,7 +20,7 @@ if (mWindow == null) {
       mSession.addWithoutInputChannel(mWindow, mWindow.mSeq, mLayout,
       mVisible ? VISIBLE : GONE, mContentInsets);
 }
-```
+{% endhighlight %}
 
 很明显，每个SurfaceView创建的时候都会创建一个```MyWindow```，```new MyWindow(this)```中的this正是SurfaceView自身，因此将SurfaceView和window绑定在一起，而前面提到过每个window对应一个Surface，所以SurfaceView也就内嵌了一个自己的Surface，可以认为SurfaceView是来控制Surface的位置和尺寸。
 
