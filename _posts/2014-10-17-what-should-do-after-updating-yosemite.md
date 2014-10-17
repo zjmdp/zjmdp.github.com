@@ -7,8 +7,6 @@ tags: []
 ---
 {% include JB/setup %}
 
-#升级Yosemite后需要做的事
-
 ##Homebrew
 
 ###问题
