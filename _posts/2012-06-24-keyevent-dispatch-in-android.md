@@ -16,7 +16,7 @@ Android中消息的整体派发过程：接收消息——消息处理前端—�
 每个窗口定义了一个```ViewRoot```（4.0中是```ViewRootImpl```）对象，而```ViewRoot```对象中定义了一个```inputHandler```，窗口管理系统（WmS）派发消息的过程中会调用```inputHandler的handlekey()```，该函数再调用```ViewRoot```中的```dispatchKey()```函数
 
 
-```
+{% highlight java %}
 private final InputHandler mInputHandler = new InputHandler() {
     public void handleKey(KeyEvent event, InputQueue.FinishedCallback finishedCallback) {
         startInputEvent(finishedCallback);
@@ -28,11 +28,12 @@ private final InputHandler mInputHandler = new InputHandler() {
         dispatchMotion(event, true);
     }
 };
-```
+{% endhighlight %}
 
 ```dispatchKey()```函数内部发送一个```DISPATCH_KEY```消息，消息的处理函数为```deliverKeyEvent()```:
 
-```
+
+{% highlight java %}
 private void dispatchKey(KeyEvent event, boolean sendDone) {
     //noinspection ConstantConditions
     if (false && event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -68,7 +69,8 @@ public void handleMessage(Message msg) {
     case DISPATCH_POINTER:
         deliverPointerEvent((MotionEvent) msg.obj, msg.arg1 != 0);
         break;
-```
+
+{% endhighlight %}
 
 ```deliverKeyEvent()```函数的执行流程如下：
 
@@ -78,7 +80,8 @@ public void handleMessage(Message msg) {
 
 * 调用```deliverKeyEventPostIme()```继而调用到```mView.dispatchKeyEvent()```
 
-```
+
+{% highlight java %}
 private void deliverKeyEvent(KeyEvent event, boolean sendDone) {
     if (ViewDebug.DEBUG_LATENCY) {
         mInputEventDeliverTimeNanos = System.nanoTime();
@@ -129,7 +132,8 @@ private void deliverKeyEventPostIme(KeyEvent event, boolean sendDone) {
     }
     ...
 }
-```
+
+{% endhighlight %}
 
 ```mView```对于应用窗口而言就是```PhoneWindow.DecorView```，否则就是普通的```ViewGroup```，我们只讨论```DecorView```中```dispatchKeyEvent```的实现：
 
@@ -139,7 +143,8 @@ private void deliverKeyEventPostIme(KeyEvent event, boolean sendDone) {
 
 * 如果```Activity```没有消耗该消息，则调用```PhoneWindow的OnKeyEvent()```对消息做最后的处理
 
-```
+
+{% highlight java %}
 @Override
 public boolean dispatchKeyEvent(KeyEvent event) {
     final int keyCode = event.getKeyCode();
@@ -177,11 +182,12 @@ public boolean dispatchKeyEvent(KeyEvent event) {
     return isDown ? PhoneWindow.this.onKeyDown(mFeatureId, event.getKeyCode(), event)
             : PhoneWindow.this.onKeyUp(mFeatureId, event.getKeyCode(), event);
 }
-```
+{% endhighlight %}
 
 下面来具体看下```Activity```中```dispatchKeyEvent```的执行过程，首先来看源码：
 
-```
+
+{% highlight java %}
 public boolean dispatchKeyEvent(KeyEvent event) {
     onUserInteraction();
     Window win = getWindow();
@@ -193,7 +199,8 @@ public boolean dispatchKeyEvent(KeyEvent event) {
     return event.dispatch(this, decor != null
             ? decor.getKeyDispatcherState() : null, this);
 }
-```
+
+{% endhighlight %}
 
 主要过程如下：
 
@@ -203,7 +210,8 @@ public boolean dispatchKeyEvent(KeyEvent event) {
 
 * 如果```DecorView```未消耗消息，则调用```event```的```dispatch()```函数，这里的第一个参数```receiver```是```Activity```对象
 
-```
+
+{% highlight java %}
 @Override
 public boolean superDispatchKeyEvent(KeyEvent event) {
     return mDecor.superDispatchKeyEvent(event);
@@ -237,11 +245,12 @@ public boolean superDispatchKeyEvent(KeyEvent event) {
 
     return false;
 }
-```
+{% endhighlight %}
 
 下面分析```ViewGroup```中```dispatchKeyEvent```的执行流程：如果```ViewGroup```本身拥有焦点，则调用```super.dispatchKeyEvent```把该消息派发到```ViewGroup```自身，如果其子视图拥有焦点，则调用```mFocused.dispatchKeyEvent```将消息派发给子视图，假如子视图也是```ViewGroup```，并且焦点是其子视图，则继续递归调用```ViewGroup```的```dispatchKeyEvent```
 
-```
+
+{% highlight java %}
 @Override
 public boolean dispatchKeyEvent(KeyEvent event) {
     if (mInputEventConsistencyVerifier != null) {
@@ -263,11 +272,13 @@ public boolean dispatchKeyEvent(KeyEvent event) {
     }
     return false;
 }
-```
+
+{% endhighlight %}
 
 在View类的```dispatchKeyEvent```中首先回调```onKey()```函数，应用程序可重载该函数以实现自定义消息处理，如果```onKey```函数未消耗该消息，则调用```event```的```dispatch```函数，在调用该函数是，第一个参数```receiver```是View对象本身
 
-```
+
+{% highlight java %}
 public boolean dispatchKeyEvent(KeyEvent event) {
     if (mInputEventConsistencyVerifier != null) {
         mInputEventConsistencyVerifier.onKeyEvent(event, 0);
@@ -291,11 +302,12 @@ public boolean dispatchKeyEvent(KeyEvent event) {
     }
     return false;
 }
-```
+{% endhighlight %}
 
 如果拥有焦点的View没有处理该按键消息，则继续调用```event.dispatch()```函数：
 
-```
+
+{% highlight java %}
 /**
  * Deliver this key event to a {@link Callback} interface.  If this is
  * an ACTION_MULTIPLE event and it is not handled, then an attempt will
@@ -361,8 +373,7 @@ public final boolean dispatch(Callback receiver, DispatcherState state,
     }
     return false;
 }
-```
-
+{% endhighlight %}
 
 该函数中主要根据相应的逻辑回调了```receiver```中的```onKeyDown```, ```onKeyUp```, ```OnKeyLongPress```, ```OnKeyMultiple```函数。View中```onKeyDown```和```onKeyUp```有自己默认的处理，主要处理presse状态，长按检测，```onCick```回调。而```OnKeyLongPress```和```OnKeyMultiple```为空实现。对于Activity的```OnKeyDown```和```onKeyUp```函数主要实现按数字启动打电话程序（```onKeyDown```）以及back键的```onBackPressed```回调(```onKeyUp```)
 
