@@ -21,7 +21,7 @@ Node是近几年流行起来的后台开发技术，相信大家即使没用过�
 异步IO最大的好处就是提高了代码执行的效率，异步请求不需要等待结果，后续代码可以立即执⾏，请求结束后通过回调的形式进⾏通知，符合"Don't call me, I will call you"原则，以读取⽂件为例：
 
 ```
-￼￼var fs = require('fs');
+var fs = require('fs');
 fs.readFile('/Path/To/File1', function(err, result){
 	console.log('读取File1完成'); 
 });
