@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Android中invalidate() 函数详解"
+title: "Android中invalidate过程详解"
 description: ""
 category: 
 tags: []
