@@ -54,27 +54,27 @@ symbol lookup error: /usr/local/lib/libfreeswitch.so.1: undefined symbol: EVP_ae
 * 使用下面的configure重新make和install openssl：
 
 ```
- ./config shared --prefix=/usr --openssldir=/usr/local/openssl -fPIC```贪图省事选择了第二种，万事大吉，freeswitch终于跑起来了。
-可是。。。server再也无法用ssh登陆了，但这时根本没意识到是因为升级openssl导致的，以为服务器挂了，但是通过telnet 80端口发现nginx正常运行，于是拨打8000求助，8000各种拉人，最后确定是因为升级openssl导致sshd服务出现兼容性问题，最后强大的8000通过`yum reinstall openssl`解决了ssh的登录问题。
+ ./config shared --prefix=/usr --openssldir=/usr/local/openssl -fPIC```
+贪图省事选择了第二种，万事大吉，freeswitch终于跑起来了。
+可是。。。server再也无法用ssh登陆了，但这时根本没意识到是因为升级openssl导致的，以为服务器挂了，但是通过telnet 80端口发现nginx正常运行，于是各种求助，最后确定是因为升级openssl导致sshd服务出现兼容性问题，最后通过```yum reinstall openssl```解决了ssh的登录问题。
 虽然ssh登录没问题了，但freeswitch的运行又默认链接到了老版本的openssl，很明显，freeswitch再次无法启动。
 ##突破
 可是freeswitch跑不起来一切白搭，于是继续探索！注意到通过覆盖的方式升级openssl后，如果重启sshd服务会出现以下提示：
 ```
 OpenSSL version mismatch. Built against 10000003, you have 1000108f
-```看起来是因为默认的sshd是用老版本openssl编译的，于是想到升级openssh，指定依赖最新版本的openssl，于是一阵download，configure，make，make install，这里需要注意的是openssh的configure参数配置需要手动指定openssl库的地址：
-```
- ./configure --prefix=/usr/local/openssh --sysconfdir=/etc/ssh --with-pam --with-ssl-dir=/usr/local/openssl --with-md5-passwords --mandir=/usr/share/man --with-zlib=/usr/local/zlib```
+```
+看起来是因为默认的sshd是用老版本openssl编译的，于是想到升级openssh，指定依赖最新版本的openssl，于是一阵download，configure，make，make install，这里需要注意的是openssh的configure参数配置需要手动指定openssl库的地址：
+```./configure --prefix=/usr/local/openssh --sysconfdir=/etc/ssh --with-pam --with-ssl-dir=/usr/local/openssl --with-md5-passwords --mandir=/usr/share/man --with-zlib=/usr/local/zlib
+```
 因为考虑到openssh的重要性，覆盖默认的ssh风险比较高，因此选择先安装到`/usr/local/openssh`，然后将`/usr/sbin/sshd`符号链接到`/usr/local/openssh/sbin/sshd`中:
 * 首先停止正在运行的sshd服务：```
 service sshd stop```
-* 备份老版本sshd文件，然后删除`/usr/sbin/sshd`* 创建符号链接
-```
-ln -s /usr/local/openssh/sbin/sshd /usr/sbin/sshd```
-* 启动sshd服务：
+* 备份老版本sshd文件，然后删除`/usr/sbin/sshd`* 创建符号链接```
+ln -s /usr/local/openssh/sbin/sshd /usr/sbin/sshd```* 启动sshd服务：
 
 ```service sshd start
-```
-立马通过跳板机ssh登录来测试新版本openssh的效果，一切看起来完美！
+```
+立马通过跳板机ssh登录来测试新版本openssh的效果，一切看起来完美！
 ##总结
 纠结了这么久，最后的效果就两点：
 * 升级openssl，覆盖默认的老版本openssl，这里选择的是覆盖，即安装到`/usr`目录下，因为我没找到可以让freeswitch运行时手动指定openssl相关so路径的办法。* 升级openssh，考虑到风险，先安装到`/usr/local/openssh`，然后通过符号链接将`/usr/sbin/sshd`链接到`/usr/local/openssh/sbin/sshd`
