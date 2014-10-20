@@ -1,7 +1,6 @@
 ---
 layout: page
 title: zjmdp's blog!
-tagline: Supporting tagline
 ---
 {% include JB/setup %}
 
