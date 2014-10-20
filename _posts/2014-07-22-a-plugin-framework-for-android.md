@@ -43,9 +43,7 @@ Android虚拟机的实现参考了java的JVM，因此在Android中加载类也�
 
 ```PathClassloader```默认会读取```/data/dalvik-cache```中缓存的dex文件，未安装的apk如果用```PathClassloader```来加载，那么在```/data/dalvik-cache```目录下找不到对应的dex，因此会抛出```ClassNotFoundException```。
 
-```DexClassloader```可以加载任意路径下包含dex和apk文件，通过指定odex生成的路径，可加载未安装的apk文件。
-
-下面一段代码展示了```DexClassloader```的使用方法：
+```DexClassloader```可以加载任意路径下包含dex和apk文件，通过指定odex生成的路径，可加载未安装的apk文件。下面一段代码展示了```DexClassloader```的使用方法：
 
 {% highlight java %}
 final File optimizedDexOutputPath = context.getDir("odex", Context.MODE_PRIVATE);
@@ -84,7 +82,7 @@ Android Framework中包含```Activity```，```Service```，```Content Provider``
 
 启动插件里的Activity必然会面对如何在主程序中的AndroidManifest.xml中声明这个Activity，然而为了保证插件框架的灵活性，我们是无法预知插件中有哪些Activity，所以也无法提前声明。
 
-为了解决上述问题，这里介绍一种基于Proxy思想的解决方法，大致原理是在主程序的AndroidManifest.xml中声明一些```ProxyActivity```，启动插件中的Activity会z转为启动主程序中的一个```ProxyActivity```，```ProxyActivity```中所有系统回调都会调用插件Activity中对应的实现，最后的效果就是启动的这个Activity实际上是主程序中已经声明的一个Activity，但是相关代码执行的却是插件Activity中的代码。这就解决了插件Activity未声明情况下无法启动的问题，从上层来看启动的就是插件中的Activity。下面具体分析整个过程。
+为了解决上述问题，这里介绍一种基于Proxy思想的解决方法，大致原理是在主程序的AndroidManifest.xml中声明一些```ProxyActivity```，启动插件中的Activity会转为启动主程序中的一个```ProxyActivity```，```ProxyActivity```中所有系统回调都会调用插件Activity中对应的实现，最后的效果就是启动的这个Activity实际上是主程序中已经声明的一个Activity，但是相关代码执行的却是插件Activity中的代码。这就解决了插件Activity未声明情况下无法启动的问题，从上层来看启动的就是插件中的Activity。下面具体分析整个过程。
 
 ###PluginSDK
 
