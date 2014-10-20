@@ -1,4 +1,4 @@
-I---
+---
 layout: post
 title: "一种基于代理的Android插件框架技术"
 description: ""
@@ -149,8 +149,9 @@ public class BasePluginActivity extends Activity implements IPluginActivity {
             super.setContentView(layoutResID);
         }
     }
+
     ...
-    
+
     @Override
     public void IOnCreate(Bundle savedInstanceState) {
         onCreate(savedInstanceState);
@@ -300,13 +301,13 @@ public class PluginProxyActivity extends Activity {
 {% highlight java %}
 
 @Override
-    protected void onResume() {
-        super.onResume();
-        if(mPluginActivity != null){
-            mPluginActivity.IOnResume();
-        }
+protected void onResume() {
+    super.onResume();
+    if(mPluginActivity != null){
+        mPluginActivity.IOnResume();
     }
-    
+}
+
 {% endhighlight %}
 
 变量```mPluginActivity```的类型是```IPluginActivity```，由于插件Activity实现了```IPluginActivity```接口，因此可以猜测```mPluginActivity.IOnResume()```最终执行的是插件Activity的```onResume```中的代码，下面我们来证实这种猜测。
@@ -316,27 +317,27 @@ public class PluginProxyActivity extends Activity {
 {% highlight java %}
 
 @Override
-    public void IOnCreate(Bundle savedInstanceState) {
-        onCreate(savedInstanceState);
-    }
+public void IOnCreate(Bundle savedInstanceState) {
+    onCreate(savedInstanceState);
+}
 
-    @Override
-    public void IOnResume() {
-        onResume();
-    }
+@Override
+public void IOnResume() {
+    onResume();
+}
 
-    @Override
-    public void IOnStart() {
-        onStart();
-    }
+@Override
+public void IOnStart() {
+    onStart();
+}
 
-    @Override
-    public void IOnPause() {
-        onPause();
-    }
+@Override
+public void IOnPause() {
+    onPause();
+}
 
-	...
-	
+...
+
 {% endhighlight %}
 
 接口实现非常简单，只是调用了和接口对应的回调函数，那这里的回调函数最终会调到哪里呢？前面提到过所有插件Activity都会继承自```BasePluginActivity```，也就是说这里的回调函数最终会调到插件Activity中对应的回调，比如```IOnResume```执行的是插件Activity中的```onResume```中的代码，这也证实了之前的猜测。
@@ -350,16 +351,16 @@ public class PluginProxyActivity extends Activity {
 {% highlight java %}
 
 private AssetManager getSelfAssets(String apkPath) {
-		AssetManager instance = null;
-		try {
-			instance = AssetManager.class.newInstance();
-			Method addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
-			addAssetPathMethod.invoke(instance, apkPath);
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-		return instance;
+	AssetManager instance = null;
+	try {
+		instance = AssetManager.class.newInstance();
+		Method addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
+		addAssetPathMethod.invoke(instance, apkPath);
+	} catch (Throwable e) {
+		e.printStackTrace();
 	}
+	return instance;
+}
 	
 {% endhighlight %}
 	
@@ -368,16 +369,16 @@ private AssetManager getSelfAssets(String apkPath) {
 {% highlight java %}
 
 public void IInit(String path, Activity context, ClassLoader classLoader, PackageInfo packageInfo) {
-        mIsRunInPlugin = true;
-        mDexClassLoader = classLoader;
-        mOutActivity = context;
-        mApkFilePath = path;
-        mPackageInfo = packageInfo;
+    mIsRunInPlugin = true;
+    mDexClassLoader = classLoader;
+    mOutActivity = context;
+    mApkFilePath = path;
+    mPackageInfo = packageInfo;
 
-        mContext = new PluginContext(context, 0, mApkFilePath, mDexClassLoader);
-        attachBaseContext(mContext);
-    }
-    
+    mContext = new PluginContext(context, 0, mApkFilePath, mDexClassLoader);
+    attachBaseContext(mContext);
+}
+
 {% endhighlight %}
 
 ```PluginContext```中通过重载```getAssets```来实现包含插件apk查找路径的Context：
@@ -385,51 +386,51 @@ public void IInit(String path, Activity context, ClassLoader classLoader, Packag
 {% highlight java %}
 
 public PluginContext(Context base, int themeres, String apkPath, ClassLoader classLoader) {
-		super(base, themeres);
-		mClassLoader = classLoader;
-        mAsset = getSelfAssets(apkPath);
-        mResources = getSelfRes(base, mAsset);
-		mTheme = getSelfTheme(mResources);
-		mOutContext = base;
-	}
-	
-	private AssetManager getSelfAssets(String apkPath) {
-		AssetManager instance = null;
-		try {
-			instance = AssetManager.class.newInstance();
-			Method addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
-			addAssetPathMethod.invoke(instance, apkPath);
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-		return instance;
-	}
+	super(base, themeres);
+	mClassLoader = classLoader;
+    mAsset = getSelfAssets(apkPath);
+    mResources = getSelfRes(base, mAsset);
+	mTheme = getSelfTheme(mResources);
+	mOutContext = base;
+}
 
-	private Resources getSelfRes(Context ctx, AssetManager selfAsset) 	{
-		DisplayMetrics metrics = ctx.getResources().getDisplayMetrics();
-		Configuration con = ctx.getResources().getConfiguration();
-		return new Resources(selfAsset, metrics, con);
+private AssetManager getSelfAssets(String apkPath) {
+	AssetManager instance = null;
+	try {
+		instance = AssetManager.class.newInstance();
+		Method addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
+		addAssetPathMethod.invoke(instance, apkPath);
+	} catch (Throwable e) {
+		e.printStackTrace();
 	}
+	return instance;
+}
 
-	private Theme getSelfTheme(Resources selfResources) {
-		Theme theme = selfResources.newTheme();
-		mThemeResId = getInnerRIdValue("com.android.internal.R.style.Theme");
-		theme.applyStyle(mThemeResId, true);
-		return theme;
-	}
+private Resources getSelfRes(Context ctx, AssetManager selfAsset) 	{
+	DisplayMetrics metrics = ctx.getResources().getDisplayMetrics();
+	Configuration con = ctx.getResources().getConfiguration();
+	return new Resources(selfAsset, metrics, con);
+}
 
-	@Override
-	public Resources getResources() {
-		return mResources;
-	}
+private Theme getSelfTheme(Resources selfResources) {
+	Theme theme = selfResources.newTheme();
+	mThemeResId = getInnerRIdValue("com.android.internal.R.style.Theme");
+	theme.applyStyle(mThemeResId, true);
+	return theme;
+}
 
-	@Override
-	public AssetManager getAssets() {
-		return mAsset;
-	}
-	
-	...
-	
+@Override
+public Resources getResources() {
+	return mResources;
+}
+
+@Override
+public AssetManager getAssets() {
+	return mAsset;
+}
+
+...
+
 {% endhighlight %}
 
 ##总结
