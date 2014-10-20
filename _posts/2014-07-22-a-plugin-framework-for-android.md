@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "一种基于代理的Android插件框架技术"
+title: "基于Proxy思想的Android插件框架"
 description: ""
 category: 
 tags: []
