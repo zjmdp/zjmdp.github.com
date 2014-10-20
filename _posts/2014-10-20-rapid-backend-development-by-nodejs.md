@@ -20,7 +20,8 @@ Node是近几年流行起来的后台开发技术，相信大家即使没用过�
 
 异步IO最大的好处就是提高了代码执行的效率，异步请求不需要等待结果，后续代码可以立即执⾏，请求结束后通过回调的形式进⾏通知，符合"Don't call me, I will call you"原则，以读取⽂件为例：
 
-```
+{% highlight javascript %}
+
 var fs = require('fs');
 fs.readFile('/Path/To/File1', function(err, result){
 	console.log('读取File1完成'); 
@@ -28,7 +29,8 @@ fs.readFile('/Path/To/File1', function(err, result){
 fs.readFile('/Path/To/File2', function(err, result){
 	console.log('读取File2完成');
 });
-```
+
+{% endhighlight %}
 
 File1和File2的读取是并发执行的，整个程序的耗时取决于读取最慢的那个文件的耗时，如果使⽤同步IO的话，耗时就等于两者之和。
 
@@ -53,14 +55,16 @@ File1和File2的读取是并发执行的，整个程序的耗时取决于读取�
 ###闭包
 严格意义上讲闭包是属于Javascript语言本身的特性，之前用C++写过⼿Q国际版的⽓泡翻译后台，这个经历让我明⽩闭包是多么的有用。先⼤概解释⼀下闭包的概念，这⾥的闭包区别于数学概念上的闭包，程序语⾔中的闭包表现为函数运行时可以访问其定义时的上下⽂环境，特别像Node这种异步回调编程模型中，回调的定义和运行处于不同的阶段，能保持上下文变得尤为重要，例如下面的⼀段代码：
 
-```
+{% highlight javascript %}
+
 var server = dgram.createSocket('udp4');
 server.on('message', function(message, remote{     
 	doAsyncTask(function(err, result){         
 		server.send(result, 0, result.length, remote.port, remote.address);     
 	});
 });
-```
+
+{% endhighlight %}
 
 ```doAsyncTask```的回调函数里调⽤了```server.send```函数，其参数使⽤了```remote```变量，这⾥回调的定义和运行就处于不同的阶段，定义是在执行```doAsyncTask```之前，⽽执行是在 ```doAsyncTask```返回结果以后，但执⾏的时候我们仍然可以访问```remote```变量，⽽```remote```变量是在定义时的上下文中的，当回调执行的时候，这个上下文早已不存在，而闭包提供的就是访问```remote```变量的能⼒。
 
@@ -82,7 +86,8 @@ Node什么都能干，但是更擅⻓IO密集型，为什么这么说？Node的�
 
 虽然异步IO可以⾼效处理并发IO，但这是以抛弃传统编程习惯为代价的，⼤量使⽤异步IO很容易导致回调嵌套过深，即所谓的Callback Hell，⽐如我们很容易写出以下风格的代码：
 
-```
+
+{% highlight javascript %}
 asyncFun1(param, function (err, data1) {
 	if (err) return cb(err);
 	asyncFun2(data1, function (err,data2) {
@@ -93,12 +98,12 @@ asyncFun1(param, function (err, data1) {
 		});
 	})
 })
-```
+{% endhighlight %}
 
 
 这种风格的代码可读性和维护性都存在一定问题，并且写代码的⼈也很容易被绕进去，因此诞⽣了各种流程控制库来解决Callback Hell的问题，⽐较著名的有async，它提供各种函数来对异步流程来进⾏控制，⽐如使⽤async中的函数```waterfall(tasks, [callback])```来解决上⾯的回调嵌套问题：
 
-```
+{% highlight javascript %}
 async.waterfall([
      asyncFun1(param, callback){
          // do some stuff...
@@ -116,11 +121,12 @@ async.waterfall([
 function(err, results){
      // results is now equal to ['data1', 'data2', 'data3']
 });
-```
+{% endhighlight %}
  
 async的使⽤能⼤大缓解Callback Hell现象，除了流程控制库，我们还可以使用事件发布/订阅的模式，这是⼀种常见的异步编程模式：
 
-```
+
+{% highlight javascript %}
 emitter.on('event1', function(result){
 	asyncFun2(function(err, result){
 		if(err) return;
@@ -139,30 +145,33 @@ asyncFun1(param, function(err, result){
 	//do something...
    emitter.emit('event1', 'data1');
 })
-```
+
+{% endhighlight %}
 
 发布/订阅模式不仅能解决Callback Hell的问题，同时它还能解耦业务逻辑，事件发布者和事件监听者之间除了事件本身以外(⽐如上例中的事件名称event1和event2)，两者之间不需要有任何联系。
 
 然而我们在解决Callback Hell的问题上并未采用上述的流程库以及事件发布/订阅，⽽使用了一种叫Promise/A⻛格的编程模式，相信做前端开发的同事应该对此很熟悉。⼀个Promise代表⼀个任务的执⾏结果，这个任务的状态可以是unfulfilled， fulfilled或者failed，Promise范式唯一需要的接口就是通过then⽅法来注册任务fulfilled和failed时的回调函数，这样的解释也许不太严谨，但⼤致表达了Promise范式的基本模型。这里将上面的例子写成Promise风格：￼
 
-```
-￼ promisefyAsyncFun1(param)
-     .then(function(result){
-         return promisefyAsyncFunc2(result);
-     })
-     .then(function(result){
-         promisfyAsyncFunc3(result);
-     })
-     .catch(err){
-         console.error("Error: " + err.message);
-     }
-```
+
+{% highlight javascript %}
+promisefyAsyncFun1(param)
+   .then(function(result){
+       return promisefyAsyncFunc2(result);
+   })
+   .then(function(result){
+       promisfyAsyncFunc3(result);
+   })
+   .catch(err){
+       console.error("Error: " + err.message);
+   }
+{% endhighlight %}
 
 
 **那Promise能带来什么?**
 从上⾯的例⼦可以看出，我们通过then将原本嵌套回调的代码顺序串联在一起，这种风格和同步式的风格⾮常相似，Promise⼏乎做到了和同步⻛格代码⼀样的编写和阅读体验，下面再通过一个具体的业务代码片段来说明这个问题：
 
-```
+
+{% highlight javascript %}
 function doHandleReq(){
         verifySig(req)
             .then(getOpenId)//获取openid
@@ -174,7 +183,7 @@ function doHandleReq(){
                 res.json(404, {"ret": ErrorInfo.UNKNOWN_ERROR.code, "msg": ErrorInfo.UNKNOWN_ERROR.msg})
             });
     }
-```
+{% endhighlight %}
 
 这段代码反映了整个充值过程的主体框架，我相信不用过多讲解⼤家就能明白这段代码的主要逻辑，如果使用传统的异步回调嵌套来实现估计没有10分钟是⽆法完全搞清整个代码的跳转流程的。这种⼀⽓呵成的coding体验和阅读体验不正是我们追求的么？大家是否注意到最后的catch，前面then中的方法一旦抛出异常，并且异常没有在方法中捕获，那所有的异常将最终在这里的catch中被捕获，这也方便了我们对异常做统一的处理。
 
@@ -184,7 +193,8 @@ function doHandleReq(){
 
 * 编写C⻛格的接口(node-ffi只⽀持C接口的封装)
 
-```
+
+{% highlight c++ %}
 class L5ClientApiWrap
 {
 public:
@@ -198,12 +208,14 @@ extern "C" {
      }
 }
 #endif
-```
+{% endhighlight %}
+
 
 * 实现接口(调⽤组件真正的API)。
 
-```
-￼#include "L5ClientApiWrap.h"
+
+{% highlight c++ %}
+#include "L5ClientApiWrap.h"
 int L5ClientApiWrap::L5ApiGetRoute(uint32_t modid, uint32_t cmdid, uint32_t *out_ip, uint32_t *out_port, float tm_out)
 {
     QOSREQUEST req;
@@ -219,12 +231,13 @@ int L5ClientApiWrap::L5ApiGetRoute(uint32_t modid, uint32_t cmdid, uint32_t *out
 	}
 	return ret; 
 }
-```
+{% endhighlight %}
 
 * 编写make脚本,将我们自己写的C风格的接口和实现，以及组件库编译成so文件￼
 
-```
-￼CXX = g++
+
+{% highlight makefile %}
+CXX = g++
 CXXFLAGS = -g -Wall -fPIC -shared
 OBJECTS = L5ClientApiWrap.o
 TargetName = libL5ClientApiWrap.so
@@ -243,11 +256,12 @@ $(OBJECTS): %.o: %.cpp
     $(CXX) $(CXXFLAGS)  -c $^  -o $@
 clean:
     rm -rf *.so *.o *.gch
-```
+{% endhighlight %}
 
 * 使⽤node-ffi编写js⽂文件，load⽣成的so，暴露相应的js接⼝
 
-```
+
+{% highlight javascript %}
 var ref = require('ref');
 var ffi = require('ffi');
 var uint32Ptr = ref.refType('uint32');
@@ -271,7 +285,7 @@ function getRoute(modid, cmdid, tmOut){
 }
 
 exports.getRoute = getRoute;
-```
+{% endhighlight %}
 
 
 ###其它⽤用到的库
