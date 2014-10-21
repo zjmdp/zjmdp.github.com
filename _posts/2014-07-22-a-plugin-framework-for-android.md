@@ -7,7 +7,7 @@ tags: []
 ---
 {% include JB/setup %}
 
-###本文所有代码托管在Github：[PluginDemo](https://github.com/zjmdp/PluginDemo)
+###本文所有代码托管在Github：[android-plugin-framework](https://github.com/zjmdp/android-plugin-framework)
 
 ##意义
 
