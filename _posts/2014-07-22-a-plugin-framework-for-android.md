@@ -86,11 +86,11 @@ Android Framework中包含```Activity```，```Service```，```Content Provider``
 
 ###PluginSDK
 
-所有的插件和主程序需要依赖PluginSDK进行开发，所有插件中的Activity继承自PluginSDK中的```BasePluginActivity```，```BasePluginActivity```继承自```Activity```并实现了```IPluginActivity```接口。
+所有的插件和主程序需要依赖PluginSDK进行开发，所有插件中的Activity继承自PluginSDK中的```PluginBaseActivity```，```PluginBaseActivity```继承自```Activity```并实现了```IActivity```接口。
 
 {% highlight java %}
 
-public interface IPluginActivity {
+public interface IActivity {
     public void IOnCreate(Bundle savedInstanceState);
 
     public void IOnResume();
@@ -113,39 +113,35 @@ public interface IPluginActivity {
 
 {% highlight java %}
 
-public class BasePluginActivity extends Activity implements IPluginActivity {
+public class PluginBaseActivity extends Activity implements IActivity {
 	...
-	private ClassLoader mDexClassLoader;
-	private Activity mActivity;
+	private Activity mProxyActivity;
 	...
 	
 	@Override
-    public void IInit(String path, Activity context, ClassLoader classLoader, PackageInfo packageInfo) {
-        mIsRunInPlugin = true;
-        mDexClassLoader = classLoader;
-        mOutActivity = context;
-        mApkFilePath = path;
-        mPackageInfo = packageInfo;
+    public void IInit(String path, Activity context, ClassLoader classLoader) {
+        mProxy = true;
+        mProxyActivity = context;
 
-        mContext = new PluginContext(context, 0, mApkFilePath, mDexClassLoader);
-        attachBaseContext(mContext);
+        mPluginContext = new PluginContext(context, 0, path, classLoader);
+        attachBaseContext(mPluginContext);
     }
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (mIsRunInPlugin) {
-            mActivity = mOutActivity;
+        if (mProxy) {
+            mRealActivity = mProxyActivity;
         } else {
             super.onCreate(savedInstanceState);
-            mActivity = this;
+            mRealActivity = this;
         }
     }
 
     @Override
     public void setContentView(int layoutResID) {
-        if (mIsRunInPlugin) {
-            mContentView = LayoutInflater.from(mContext).inflate(layoutResID, null);
-            mActivity.setContentView(mContentView);
+        if (mProxy) {
+            mContentView = LayoutInflater.from(mPluginContext).inflate(layoutResID, null);
+            mRealActivity.setContentView(mContentView);
         } else {
             super.setContentView(layoutResID);
         }
@@ -193,8 +189,8 @@ public class BasePluginActivity extends Activity implements IPluginActivity {
 
 {% highlight java %}
 
-public class PluginProxyActivity extends Activity {
-    IPluginActivity mPluginActivity;
+public class ProxyActivity extends Activity {
+    IActivity mPluginActivity;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -202,9 +198,9 @@ public class PluginProxyActivity extends Activity {
         if(bundle == null){
             return;
         }
-        mPluginName = bundle.getString(PluginStatic.PARAM_PLUGIN_NAME);
-        mLaunchActivity = bundle.getString(PluginStatic.PARAM_LAUNCH_ACTIVITY);
-        File pluginFile = PluginUtils.getInstallPath(PluginProxyActivity.this, mPluginName);
+        mPluginName = bundle.getString(PluginConstants.PLUGIN_NAME);
+        mLaunchActivity = bundle.getString(PluginConstants.LAUNCH_ACTIVITY);
+        File pluginFile = PluginUtils.getInstallPath(ProxyActivity.this, mPluginName);
         if(!pluginFile.exists()){
             return;
         }
@@ -218,7 +214,7 @@ public class PluginProxyActivity extends Activity {
             e.printStackTrace();
         }
     }
-
+    
     @Override
     protected void onResume() {
         super.onResume();
@@ -262,7 +258,7 @@ public class PluginProxyActivity extends Activity {
         Class<?> mClassLaunchActivity = (Class<?>) classLoader.loadClass(mLaunchActivity);
 
         getIntent().setExtrasClassLoader(classLoader);
-        mPluginActivity = (IPluginActivity) mClassLaunchActivity.newInstance();
+        mPluginActivity = (IActivity) mClassLaunchActivity.newInstance();
         mPluginActivity.IInit(mPluginApkFilePath, this, classLoader, packageInfo);
     }
     
@@ -295,9 +291,9 @@ public class PluginProxyActivity extends Activity {
 {% endhighlight %}
 
 
-```BasePluginActivity```和```PluginProxyActivity```在整个插件框架的核心，下面简单分析一下代码：
+```PluginBaseActivity```和```ProxyActivity```在整个插件框架的核心，下面简单分析一下代码：
 
-首先看一下```PluginProxyActivity#onResume```：
+首先看一下```ProxyActivity#onResume```：
 
 {% highlight java %}
 
@@ -311,9 +307,9 @@ protected void onResume() {
 
 {% endhighlight %}
 
-变量```mPluginActivity```的类型是```IPluginActivity```，由于插件Activity实现了```IPluginActivity```接口，因此可以猜测```mPluginActivity.IOnResume()```最终执行的是插件Activity的```onResume```中的代码，下面我们来证实这种猜测。
+变量```mPluginActivity```的类型是```IActivity```，由于插件Activity实现了```IActivity```接口，因此可以猜测```mPluginActivity.IOnResume()```最终执行的是插件Activity的```onResume```中的代码，下面我们来证实这种猜测。
 
-```BasePluginActivity```实现了```IPluginActivity```接口，那么这些接口具体是怎么实现的呢？看代码：
+```PluginBaseActivity```实现了```IActivity```接口，那么这些接口具体是怎么实现的呢？看代码：
 
 {% highlight java %}
 
@@ -341,7 +337,7 @@ public void IOnPause() {
 
 {% endhighlight %}
 
-接口实现非常简单，只是调用了和接口对应的回调函数，那这里的回调函数最终会调到哪里呢？前面提到过所有插件Activity都会继承自```BasePluginActivity```，也就是说这里的回调函数最终会调到插件Activity中对应的回调，比如```IOnResume```执行的是插件Activity中的```onResume```中的代码，这也证实了之前的猜测。
+接口实现非常简单，只是调用了和接口对应的回调函数，那这里的回调函数最终会调到哪里呢？前面提到过所有插件Activity都会继承自```PluginBaseActivity```，也就是说这里的回调函数最终会调到插件Activity中对应的回调，比如```IOnResume```执行的是插件Activity中的```onResume```中的代码，这也证实了之前的猜测。
 
 上面的一些代码片段揭示了插件框架的核心逻辑，其它的代码更多的是为实现这种逻辑服务的，后面会提供整个工程的源码，大家可自行分析理解。
 
@@ -365,16 +361,13 @@ private AssetManager getSelfAssets(String apkPath) {
 	
 {% endhighlight %}
 	
-为了让插件Activity访问资源时使用我们自定义的Context，我们需要在```BasePluginActivity```的初始化中做一些处理：
+为了让插件Activity访问资源时使用我们自定义的Context，我们需要在```PluginBaseActivity```的初始化中做一些处理：
 
 {% highlight java %}
 
 public void IInit(String path, Activity context, ClassLoader classLoader, PackageInfo packageInfo) {
-    mIsRunInPlugin = true;
-    mDexClassLoader = classLoader;
-    mOutActivity = context;
-    mApkFilePath = path;
-    mPackageInfo = packageInfo;
+    mProxy = true;
+    mProxyActivity = context;
 
     mContext = new PluginContext(context, 0, mApkFilePath, mDexClassLoader);
     attachBaseContext(mContext);
@@ -395,7 +388,7 @@ public PluginContext(Context base, int themeres, String apkPath, ClassLoader cla
 	mOutContext = base;
 }
 
-private AssetManager getSelfAssets(String apkPath) {
+private AssetManager getPluginAssets(String apkPath) {
 	AssetManager instance = null;
 	try {
 		instance = AssetManager.class.newInstance();
@@ -407,13 +400,13 @@ private AssetManager getSelfAssets(String apkPath) {
 	return instance;
 }
 
-private Resources getSelfRes(Context ctx, AssetManager selfAsset) 	{
+private Resources getPluginResources(Context ctx, AssetManager selfAsset) 	{
 	DisplayMetrics metrics = ctx.getResources().getDisplayMetrics();
 	Configuration con = ctx.getResources().getConfiguration();
 	return new Resources(selfAsset, metrics, con);
 }
 
-private Theme getSelfTheme(Resources selfResources) {
+private Theme getPluginTheme(Resources selfResources) {
 	Theme theme = selfResources.newTheme();
 	mThemeResId = getInnerRIdValue("com.android.internal.R.style.Theme");
 	theme.applyStyle(mThemeResId, true);
