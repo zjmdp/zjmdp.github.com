@@ -233,21 +233,14 @@ public class ProxyActivity extends Activity {
     
     ...
     
-        private void initPlugin() throws Exception {
-        PackageInfo packageInfo;
-        try {
-            PackageManager pm = getPackageManager();
-            packageInfo = pm.getPackageArchiveInfo(mPluginApkFilePath, PackageManager.GET_ACTIVITIES);
-        } catch (Exception e) {
-            throw e;
-        }
+    private void initPlugin() throws Exception {
+  		PackageInfo packageInfo = PluginUtils.getPackgeInfo(this, mPluginApkFilePath);
 
         if (mLaunchActivity == null || mLaunchActivity.length() == 0) {
             mLaunchActivity = packageInfo.activities[0].name;
         }
 
-//        String optimizedDexOutputPath = getDir("odex", Context.MODE_PRIVATE).getAbsolutePath();
-        ClassLoader classLoader = PluginStatic.getOrCreateClassLoaderByPath(this, mPluginName, mPluginApkFilePath);
+        ClassLoader classLoader = PluginUtils.getClassLoader(this, mPluginName, mPluginApkFilePath);
 
         if (mLaunchActivity == null || mLaunchActivity.length() == 0) {
             if (packageInfo == null || (packageInfo.activities == null) || (packageInfo.activities.length == 0)) {
@@ -255,38 +248,37 @@ public class ProxyActivity extends Activity {
             }
             mLaunchActivity = packageInfo.activities[0].name;
         }
-        Class<?> mClassLaunchActivity = (Class<?>) classLoader.loadClass(mLaunchActivity);
+        Class<?> mClassLaunchActivity = classLoader.loadClass(mLaunchActivity);
 
         getIntent().setExtrasClassLoader(classLoader);
         mPluginActivity = (IActivity) mClassLaunchActivity.newInstance();
-        mPluginActivity.IInit(mPluginApkFilePath, this, classLoader, packageInfo);
+        mPluginActivity.IInit(mPluginApkFilePath, this, classLoader);
     }
     
     ...
     
     @Override
     public void startActivityForResult(Intent intent, int requestCode) {
-        boolean pluginActivity = intent.getBooleanExtra(PluginStatic.PARAM_IS_IN_PLUGIN, false);
+    	boolean pluginActivity = intent.getBooleanExtra(PluginConstants.IS_IN_PLUGIN, false);
         if (pluginActivity) {
             String launchActivity = null;
             ComponentName componentName = intent.getComponent();
             if(null != componentName) {
                 launchActivity = componentName.getClassName();
             }
-            intent.putExtra(PluginStatic.PARAM_IS_IN_PLUGIN, false);
+            intent.putExtra(PluginConstants.IS_IN_PLUGIN, false);
             if (launchActivity != null && launchActivity.length() > 0) {
                 Intent pluginIntent = new Intent(this, getProxyActivity(launchActivity));
 
-                pluginIntent.putExtra(PluginStatic.PARAM_PLUGIN_NAME, mPluginName);
-                pluginIntent.putExtra(PluginStatic.PARAM_PLUGIN_PATH, mPluginApkFilePath);
-                pluginIntent.putExtra(PluginStatic.PARAM_LAUNCH_ACTIVITY, launchActivity);
+                pluginIntent.putExtra(PluginConstants.PLUGIN_NAME, mPluginName);
+                pluginIntent.putExtra(PluginConstants.PLUGIN_PATH, mPluginApkFilePath);
+                pluginIntent.putExtra(PluginConstants.LAUNCH_ACTIVITY, launchActivity);
                 startActivityForResult(pluginIntent, requestCode);
             }
         } else {
 			super.startActivityForResult(intent, requestCode);
         }
     }
-}
 
 {% endhighlight %}
 
@@ -382,10 +374,9 @@ public void IInit(String path, Activity context, ClassLoader classLoader, Packag
 public PluginContext(Context base, int themeres, String apkPath, ClassLoader classLoader) {
 	super(base, themeres);
 	mClassLoader = classLoader;
-    mAsset = getSelfAssets(apkPath);
-    mResources = getSelfRes(base, mAsset);
-	mTheme = getSelfTheme(mResources);
-	mOutContext = base;
+	mAsset = getPluginAssets(pluginFilePath);
+	mResources = getPluginResources(base, mAsset);
+	mTheme = getPluginTheme(mResources);
 }
 
 private AssetManager getPluginAssets(String apkPath) {
@@ -400,7 +391,7 @@ private AssetManager getPluginAssets(String apkPath) {
 	return instance;
 }
 
-private Resources getPluginResources(Context ctx, AssetManager selfAsset) 	{
+private Resources getPluginAssets(Context ctx, AssetManager selfAsset) 	{
 	DisplayMetrics metrics = ctx.getResources().getDisplayMetrics();
 	Configuration con = ctx.getResources().getConfiguration();
 	return new Resources(selfAsset, metrics, con);
@@ -428,4 +419,4 @@ public AssetManager getAssets() {
 {% endhighlight %}
 
 ##总结
-本文描述了一种基于Proxy思想的插件框架，所有的代码都在Github中，代码只是抽取了整个框架的核心部分，如果要用在生产环境中还需要完善，比如```Content Provider```和```BroadcastReceiver```组件的Proxy类未实现，Activity的Proxy实现也是不完整的，包括不少回调都没有处理。同时我也无法保证这套框架没有致命缺陷，本文主要是以总结、学习和交流为目的，欢迎大家一起交流。
+本文介绍了一种基于Proxy思想的插件框架，所有的代码都在Github中，代码只是抽取了整个框架的核心部分，如果要用在生产环境中还需要完善，比如```Content Provider```和```BroadcastReceiver```组件的Proxy类未实现，Activity的Proxy实现也是不完整的，包括不少回调都没有处理。同时我也无法保证这套框架没有致命缺陷，本文主要是以总结、学习和交流为目的，欢迎大家一起交流。
