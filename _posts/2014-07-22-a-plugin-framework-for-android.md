@@ -1,4 +1,4 @@
----
+I---
 layout: post
 title: "基于Proxy思想的Android插件框架"
 description: ""
@@ -7,7 +7,7 @@ tags: []
 ---
 {% include JB/setup %}
 
-###本文所有代码托管在Github：[android-plugin-framework](https://github.com/zjmdp/android-plugin-framework)
+###本文所有代码托管在Github：[android-plugin](https://github.com/zjmdp/android-plugin)
 
 ##意义
 
